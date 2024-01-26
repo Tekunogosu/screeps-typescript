@@ -1,43 +1,69 @@
-import { ErrorMapper } from "utils/ErrorMapper";
+import {ErrorMapper} from "utils/ErrorMapper";
 
-declare global {
-  /*
-    Example types, expand on these or remove them and add your own.
-    Note: Values, properties defined here do no fully *exist* by this type definiton alone.
-          You must also give them an implemention if you would like to use them. (ex. actually setting a `role` property in a Creeps memory)
+import "./globals";
+import "./creep.prototype";
 
-    Types added in this `global` block are in an ambient, global context. This is needed because `main.ts` is a module file (uses import or export).
-    Interfaces matching on name from @types/screeps will be merged. This is how you can extend the 'built-in' interfaces from @types/screeps.
-  */
-  // Memory extension samples
-  interface Memory {
-    uuid: number;
-    log: any;
-  }
+import {Distance, generateUUID, RoleType, WorkType, ReturnCode} from "./Utils";
+import {RoleHarvester} from "./roles/role.harvester";
 
-  interface CreepMemory {
-    role: string;
-    room: string;
-    working: boolean;
-  }
+import _ from "lodash";
 
-  // Syntax for adding proprties to `global` (ex "global.log")
-  namespace NodeJS {
-    interface Global {
-      log: any;
-    }
-  }
+
+
+StructureSpawn.prototype.SpawnCreep = function (role, name, body, opts): ReturnCode {
+    if (name)
+        name += generateUUID();
+    else
+        name = role + generateUUID();
+    
+    return this.spawnCreep([WORK, MOVE, CARRY], name, {...opts, memory: {role: role}})
 }
 
-// When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
-// This utility uses source maps to get the line numbers and file names of the original, TS source code
-export const loop = ErrorMapper.wrapLoop(() => {
-  console.log(`Current game tick is ${Game.time}`);
 
-  // Automatically delete memory of missing creeps
-  for (const name in Memory.creeps) {
-    if (!(name in Game.creeps)) {
-      delete Memory.creeps[name];
+const ClearStaleMemory = (): void => {
+    for (const name in Memory.creeps) {
+        if (!(name in Game.creeps)) {
+            delete Memory.creeps[name];
+        }
     }
-  }
+};
+
+const SpawnTester = function (role: RoleType, name: string = ""): ReturnCode {
+    let spawn = Game.spawns["Gothic Queen"]
+    return spawn.SpawnCreep(role, name, [WORK, CARRY, MOVE]);
+}
+
+
+const print = function (thing: any) {
+    console.log(JSON.stringify(thing));
+}
+
+const CreepCount = function (role: RoleType): number {
+    return _.filter(Game.creeps, (creep) => creep.memory.role === role).length
+}
+
+export const loop = ErrorMapper.wrapLoop(() => {
+    // console.log(`Current game tick is ${Game.time}`);
+    
+    ClearStaleMemory();
+    
+    // let newSpan = SpawnTester(RoleType.Harvester);
+    // console.log(newSpan);
+    
+    if (CreepCount(RoleType.Harvester) < 2) {
+        console.log(SpawnTester(RoleType.Harvester));
+    }
+    
+    
+    for (const name in Game.creeps) {
+        let creep: Creep = Game.creeps[name];
+        
+        let role: RoleType | undefined = creep.memory.role;
+        
+        if (creep.memory.role === RoleType.Harvester) {
+            let harvester = new RoleHarvester(creep.id);
+            harvester.run();
+        }
+        
+    }
 });
