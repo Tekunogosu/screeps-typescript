@@ -6,6 +6,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from 'rollup-plugin-typescript2';
 import screeps from 'rollup-plugin-screeps';
 import json from '@rollup/plugin-json';
+// import profiler from "screeps-profiler";
 
 let cfg;
 const dest = process.env.DEST;
@@ -29,6 +30,6 @@ export default {
         commonjs(),
         json(),
         typescript({tsconfig: "./tsconfig.json"}),
-        screeps({config: cfg, dryRun: cfg == null})
+        screeps({config: cfg, dryRun: cfg == null}),
     ]
 }

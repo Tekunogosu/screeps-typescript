@@ -12,11 +12,18 @@ export function generateUUID (): string {
     return uuid;
 }
 
-export function IsStoreFull(target: AnyStoreStructure, resource: ResourceConstant): boolean {
+export function IsStoreFull (target: AnyStoreStructure, resource: ResourceConstant): boolean {
     return target.store.getFreeCapacity(resource)! <= 0;
 }
-export function IsStoreEmpty(target: AnyStoreStructure, resource: ResourceConstant) : boolean {
+
+export function IsStoreEmpty (target: AnyStoreStructure, resource: ResourceConstant): boolean | undefined {
+    if (!target || !target.store) return undefined;
+    
     return target.store.getFreeCapacity(resource) === target.store.getCapacity(resource)
+}
+
+export function IsString (value: any): boolean {
+    return typeof value === 'string';
 }
 
 export enum RoleType {
@@ -33,8 +40,9 @@ export enum Distance {
 }
 
 export enum WorkType {
+    NOTHING = 0,
     NoWork = 1,
-    Building ,
+    Building,
     Harvesting,
     Transferring,
     Withdrawing,
@@ -42,6 +50,8 @@ export enum WorkType {
     Repairing,
     Upgrading,
 }
+
+export const WorkTable = ["NOTHING", "No Work", "Build", "Harvest", "Transfer", "Withdraw", "Attack", "Repair", "Upgrade"];
 
 export enum ReturnCode {
     ERR_STORE_FULL = -20,
