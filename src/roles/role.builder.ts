@@ -22,18 +22,32 @@ export class RoleBuilder extends Creep {
     
     private ResetTargetID (): void {
         let target = this.FindValidBuildTarget(this.searchAgrs);
-        console.log("Builder targets "+JSON.stringify(target));
+        console.log("Builder targets " + JSON.stringify(target));
         if (target) {
             this.SetTargetID(target);
         } else {
             console.log(this.name + " has no valid target..");
+            
+            
+            // do repair on walls up to 5k, the
+            let walls = this.room.find(FIND_STRUCTURES, {
+                filter: (struct: AnyStructure) => {
+                    return (struct.structureType === STRUCTURE_WALL && struct.hits <= 5000)
+                }
+            });
+            if (walls && walls.length > 0) {
+                this.SetWork(WorkType.Repairing);
+                this.SetTargetID(walls[0].id);
+                return;
+            }
+            
             this.SetWork(WorkType.NoWork)
         }
     }
     
     private ResetSourceID (): void {
         let target = this.FindValidWithdrawID({});
-        console.log("Source ID Target "+JSON.stringify(target))
+        console.log("Source ID Target " + JSON.stringify(target))
         if (target)
             this.SetSourceID(target);
         else
@@ -66,10 +80,15 @@ export class RoleBuilder extends Creep {
             return;
         }
         
+        // this.CheckRenew(WorkType.Building);
+        
         let targetOfAction = this.GetTargetID();
         
         if (this.GetWork() === WorkType.Withdrawing)
             targetOfAction = this.GetSourceID();
+        
+        if (this.GetWork() === WorkType.Repairing)
+            targetOfAction = this.GetTargetID();
         
         
         let actionResult: ReturnCode | ScreepsReturnCode | CreepActionReturnCode = ERR_INVALID_TARGET;
@@ -78,26 +97,29 @@ export class RoleBuilder extends Creep {
         
         
         if (targetOfAction) {
-        
+            
             actionResult = this.TryMove(targetOfAction, this.GetWork())
         } else {
             this.ResetTargetID();
         }
         
         if (actionResult === ERR_INVALID_TARGET) {
-        
+            
             this.ResetTargetID()
             
         } else if (actionResult === ReturnCode.ERR_STORE_FULL) {
-      
+            
             this.SetWork(WorkType.Building)
             
         } else if (actionResult === ReturnCode.ERR_STORE_EMPTY) {
-     
+            
             this.SetWork(WorkType.Withdrawing);
-        } else if (actionResult == ReturnCode.ERR_TARGET_STORE_EMPTY) {
+        } else if (actionResult === ReturnCode.ERR_TARGET_STORE_EMPTY) {
             this.ResetSourceID();
-        } 
+            
+        } else if (actionResult === ERR_NOT_ENOUGH_ENERGY) {
+            this.SetWork(WorkType.Withdrawing)
+        }
         
     }
 }

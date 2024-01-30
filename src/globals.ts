@@ -8,18 +8,45 @@ declare global {
         uuid: number,
         log: any,
         towers: {
-            [key: string]: {}
-        },
+            [key: string]: TowerMemory,
+        }
+    }
+    
+    interface TowerMemory {
+        
+        targetID?: Id<Creep>,
+        repairID?: Id<AnyStructure>,
+        healID?: Id<Creep>
     }
     
     interface Source {
-        update(): void,
+        update (): void,
         
         _constructor: Function,
     }
     
-    interface StructureTower {
+    interface Flag {
         
+    }
+    
+    interface StructureTower {
+        memory: TowerMemory,
+        
+        FindNewTarget (): Id<Creep> | undefined,
+        
+        FindNewHealTarget (): Id<Creep> | undefined,
+        
+        FindNewRepairTarget (): Id<AnyStructure> | undefined,
+        
+        SetTarget (id: Id<Creep>): void,
+        
+        SetHealTarget (id: Id<Creep>): void,
+        
+        SetRepairTarget (id: Id<AnyStructure>): void,
+        
+        GetTargetID(): Id<Creep> | undefined,
+        GetHealTargetID(): Id<Creep> | undefined,
+        GetRepairTargetID(): Id<AnyStructure> | undefined,
     }
     
     interface Search {
@@ -36,11 +63,21 @@ declare global {
         [k in StructureConstant]?: number
     }
     
+    interface SpawnReq {
+        role: RoleType,
+        greater?: number,
+        lesser?: number,
+        equal?: number,
+    }
+
+    
     interface Creep {
         run (): void,
-        
         // core creep needs
-        neededRenew (): boolean;
+        
+        CheckRenew(primaryWork: WorkType): void,
+        
+        TryRenew (target: Id<StructureSpawn>): ReturnCode | ScreepsReturnCode,
         
         TryMove (target: Id<any> | undefined, workType: WorkType): ReturnCode | CreepActionReturnCode | ScreepsReturnCode,
         
@@ -54,6 +91,8 @@ declare global {
         
         TryBuilding (target: ConstructionSite): ReturnCode | ScreepsReturnCode | CreepActionReturnCode,
         
+        TryRepairing (target: AnyStructure): ReturnCode | ScreepsReturnCode | CreepActionReturnCode,
+        
         /////////// Memory  /////////////
         
         SetSourceID (id: Id<any>): void,
@@ -66,6 +105,9 @@ declare global {
         
         SwapPrimaryID (memVal: TargetIDMemory): void,
         
+        GetRenewTargetID () : Id<StructureSpawn> | undefined,
+        SetRenewTargetID(id: Id<StructureSpawn>): void,
+        
         /////////////////////////////////
         
         FindValidHarvestID (args: Search): Id<Source> | undefined, // for using creep.harvest
@@ -77,7 +119,7 @@ declare global {
         
         FindValidRepairID (args: Search): void,
         
-        FindValidBuildTarget(args: Search): Id<ConstructionSite> | undefined,
+        FindValidBuildTarget (args: Search): Id<ConstructionSite> | undefined,
         
         //////////////////////////////////
         
@@ -120,8 +162,19 @@ declare global {
         role?: RoleType,
         sourceID?: Id<Source>, // where does the creep get its source?
         targetID?: Id<Structure>, // what do we perform our action on?
+        renewTargetID?: Id<StructureSpawn>,
         currentWork?: WorkType,
         waitingFlagName?: string,
+        renewing?: boolean,
+        _move?: {
+            dest?: {
+                x?: number,
+                y?: number,
+                room?: string,
+            },
+            time?: number,
+            path?: number,
+        },
         
         harvestTarget?: TargetIDMemory,
         transferTarget?: TargetIDMemory,
@@ -131,7 +184,7 @@ declare global {
     }
     
     interface TargetIDMemory {
-        primaryTargetID: Id<Source|Creep|Structure>,
+        primaryTargetID: Id<Source | Creep | Structure>,
         // this list will hold source locations on the map
         // the primary will be swapped to one of these if its unreachable or empty
         secondaryTargetsID?: Id<Source | Creep | Structure>[],

@@ -10,7 +10,6 @@ export class RoleHarvester extends Creep {
     
     private ResetHarvestID () {
         if (!this) {
-            console.log("Im not alive?????");
             return;
         }
         let harvestID: Id<Source> | undefined = this.FindValidHarvestID({distance: Distance.Closest});
@@ -27,13 +26,13 @@ export class RoleHarvester extends Creep {
     
     private ResetTargetID () {
         if (!this) {
-            console.log("Im not alive?????");
             return;
         }
+        
         let transferTargetID: Id<Structure> | any = this.FindValidTransferID({
             find: FIND_STRUCTURES,
             structure: [STRUCTURE_STORAGE, STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_CONTAINER, STRUCTURE_TOWER],
-            distance: Distance.Closest,
+            distance: Distance.Any,
         });
         
         if (transferTargetID) {
@@ -55,13 +54,16 @@ export class RoleHarvester extends Creep {
             this.SetWork(WorkType.Harvesting)
         
         if (!this.memory.waitingFlagName) {
-            console.log("Resetting")
             this.SetWaitingFlag('waiting')
         }
         
         // Check for updated target every 30 ticks
-        this.CallEvery(30, () => {
+        this.CallEvery(15, () => {
             this.ResetTargetID();
+        });
+        
+        this.CallEvery(30, () => {
+            this.ResetHarvestID(); // make sure we are getting the best source 
         });
         
         if (this.IsWorking(WorkType.NoWork)) {
@@ -74,6 +76,24 @@ export class RoleHarvester extends Creep {
             this.moveTo(Game.flags[this.memory.waitingFlagName!].pos)
         }
         
+        if(this.ticksToLive! <= 200) {
+            this.memory.renewing = true;
+        }
+        
+        if (this.memory.renewing) {
+            console.log(this.name +" is renewing")
+            let spawn =this.room.find(FIND_MY_SPAWNS);
+            if (spawn && spawn.length > 0){
+                if(spawn[0].renewCreep(this) === ERR_NOT_IN_RANGE)
+                    this.moveTo(spawn[0]);
+            }
+            
+            if (this.ticksToLive! >= 1400)
+                this.memory.renewing = false;
+        }
+        
+        
+        //this.CheckRenew(WorkType.Harvesting);
         
         let returnCode: ReturnCode | CreepActionReturnCode | ScreepsReturnCode = ERR_INVALID_TARGET;
         
@@ -90,7 +110,6 @@ export class RoleHarvester extends Creep {
             if (!this.GetTargetID())
                 this.ResetTargetID();
             
-            console.log("Has ID " + this.GetTargetID());
             targetOfAction = this.GetTargetID()!;
         }
         
@@ -112,27 +131,22 @@ export class RoleHarvester extends Creep {
                 if (returnCode === ReturnCode.ERR_STORE_FULL)
                     this.SetWork(WorkType.Transferring);
                 
-                if (returnCode === ReturnCode.ERR_TARGET_STORE_FULL)
+                if (returnCode === ReturnCode.ERR_TARGET_STORE_EMPTY||
+                    returnCode === ERR_INVALID_TARGET ||
+                    returnCode === ERR_NO_PATH) {
+                    
                     this.ResetHarvestID();
+                }
                 
-                if (returnCode === ReturnCode.ERR_TARGET_STORE_EMPTY)
-                    this.ResetHarvestID();
-                
-                if (returnCode === ERR_NO_PATH)
-                    this.ResetHarvestID();
                 
                 // if target source is empty or unreachable, look for another source
             } else if (this.IsWorking(WorkType.Transferring)) {
-                console.log("Work: Transferring: code: " + returnCode);
-                console.log("Getting new transfer target")
-                
-                if (returnCode === ReturnCode.ERR_TARGET_STORE_FULL)
+                if (returnCode === ReturnCode.ERR_TARGET_STORE_FULL || 
+                    returnCode === ERR_INVALID_TARGET)
                     this.ResetTargetID();
                 
-                if (returnCode === ReturnCode.ERR_STORE_EMPTY)
-                    this.SetWork(WorkType.Harvesting);
-                
-                if (returnCode === ERR_NOT_ENOUGH_ENERGY)
+                if (returnCode === ReturnCode.ERR_STORE_EMPTY || 
+                    returnCode === ERR_NOT_ENOUGH_ENERGY)
                     this.SetWork(WorkType.Harvesting);
             }
         }

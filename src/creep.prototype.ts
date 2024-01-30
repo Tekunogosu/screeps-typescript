@@ -1,8 +1,57 @@
-import {Distance, IsStoreEmpty, IsStoreFull, ReturnCode, WorkTable, WorkType} from "./Utils";
+import {Distance, IsEnergyFull, IsStoreEmpty, IsStoreFull, ReturnCode, WorkTable, WorkType} from "./Utils";
 import "./globals";
 
 
 Creep.prototype._constructor = Creep.prototype.constructor;
+
+Creep.prototype.TryRenew = function (id: Id<StructureSpawn>): ReturnCode | ScreepsReturnCode {
+    const spawn = Game.getObjectById(id);
+    if (spawn) {
+        return spawn.renewCreep(this);
+    }
+    
+    return ReturnCode.ERR_NO_SPAWN_FOUND;
+}
+
+Creep.prototype.CheckRenew = function (primaryWork: WorkType): void  {
+    if (this.ticksToLive) {
+        if (this.ticksToLive <= 500 && this.GetWork() !== WorkType.Renew) {
+            this.SetWork(WorkType.Renew);
+        } else if (this.ticksToLive >= 1400) {
+            if (this.GetWork() === WorkType.Renew)
+                this.SetWork(primaryWork);
+            
+            return;
+        }
+    }
+    if (this.GetWork() === WorkType.Renew) {
+        const renewID = this.GetRenewTargetID();
+        
+        let returnCode: ReturnCode | ScreepsReturnCode = ERR_INVALID_TARGET;
+        
+        if (renewID) {
+            returnCode = this.TryMove(renewID, this.GetWork())
+        } else {
+            let spawn = this.room.find(FIND_MY_SPAWNS, {
+                filter: (spawn: StructureSpawn) => {
+                    return spawn.room.name === this.room.name
+                }
+            });
+            
+            
+            if (spawn && spawn.length > 0) {
+                this.SetRenewTargetID(spawn[0].id);
+                returnCode = this.TryMove(spawn[0].id, this.GetWork());
+            }
+        }
+        
+        if (returnCode === ERR_INVALID_TARGET || returnCode === ReturnCode.ERR_NO_SPAWN_FOUND) {
+            console.log("******* ERROR: No spawn found to renew "+this.name);
+        } else {
+            console.log("**** Renew returned code: "+ returnCode);
+        }
+    }
+}
 
 
 Creep.prototype.ResetMemoryEvery = function (memVal: keyof CreepMemory, interval: number, callback: Function | null): void {
@@ -38,7 +87,6 @@ Creep.prototype.TryMove = function (_target: Id<any> | undefined, work: WorkType
     
     let workReturnCode: ReturnCode | CreepActionReturnCode | ScreepsReturnCode = ERR_NOT_IN_RANGE;
     
-
     switch (work) {
         case WorkType.Harvesting: {
             workReturnCode = this.TryHarvest(target);
@@ -51,35 +99,56 @@ Creep.prototype.TryMove = function (_target: Id<any> | undefined, work: WorkType
             break;
         }
         case WorkType.Upgrading: {
+            workReturnCode = this.TryUpgrading(target)
             break;
         }
         case WorkType.Building: {
-            workReturnCode = this.TryBuilding(target)
+            workReturnCode = this.TryBuilding(target);
             break;
         }
         case WorkType.Repairing: {
+            workReturnCode = this.TryRepairing(target);
             break;
         }
         
         case WorkType.Withdrawing: {
-          
             workReturnCode = this.TryWithdraw(target, RESOURCE_ENERGY);
             break;
         }
         case WorkType.Attacking: {
             break;
         }
+        case WorkType.Renew: {
+            workReturnCode = this.TryRenew(target)
+            break;
+        }
     }
     
     if (workReturnCode === ERR_NOT_IN_RANGE) {
-        return this.moveTo(target, {visualizePathStyle: {lineStyle: "dotted",strokeWidth: 0.25, stroke: "#ff88ff"}});
+        return this.moveTo(target,{reusePath: 25,visualizePathStyle: {lineStyle: "dotted", strokeWidth: 0.25, stroke: "#ff88ff"}});
     } else {
         return workReturnCode;
     }
 }
 
+Creep.prototype.TryUpgrading = function (target: StructureController): ReturnCode | ScreepsReturnCode | CreepActionReturnCode {
+    if (this.IsStoreEmpty(RESOURCE_ENERGY))
+        return ReturnCode.ERR_STORE_EMPTY
+    
+    return this.upgradeController(target);
+    
+}
 
-Creep.prototype.TryHarvest = function (target: Source | Mineral | Deposit): ReturnCode | CreepActionReturnCode | ScreepsReturnCode {
+Creep.prototype.TryRepairing = function (target: AnyStructure): ReturnCode | ScreepsReturnCode | CreepActionReturnCode {
+    return this.repair(target);
+}
+
+
+Creep.prototype.TryHarvest = function (target: Source): ReturnCode | CreepActionReturnCode | ScreepsReturnCode {
+    
+    if (target.energy === 0) {
+        return ReturnCode.ERR_TARGET_STORE_EMPTY;
+    }
     
     if (this.IsStoreFull(RESOURCE_ENERGY))
         return ReturnCode.ERR_STORE_FULL;
@@ -89,10 +158,18 @@ Creep.prototype.TryHarvest = function (target: Source | Mineral | Deposit): Retu
 
 Creep.prototype.TryTransfer = function (target: AnyStoreStructure, resource: ResourceConstant): ReturnCode | CreepActionReturnCode | ScreepsReturnCode {
     
+    if (target.structureType === STRUCTURE_SPAWN || target.structureType === STRUCTURE_EXTENSION) {
+        if (IsEnergyFull(target))
+            return ReturnCode.ERR_TARGET_STORE_FULL
+    }
+    
     if (IsStoreFull(target, RESOURCE_ENERGY)) {
         return ReturnCode.ERR_TARGET_STORE_FULL;
     }
-
+    
+    if (this.IsStoreEmpty(resource))
+        return ReturnCode.ERR_STORE_EMPTY
+    
     return this.transfer(target, resource);
 }
 
@@ -101,10 +178,11 @@ Creep.prototype.TryBuilding = function (target: ConstructionSite): ReturnCode | 
     if (this.IsStoreEmpty(RESOURCE_ENERGY))
         return ReturnCode.ERR_STORE_EMPTY
     
+    
     return this.build(target);
 }
 
-Creep.prototype.TryWithdraw = function (target: AnyStoreStructure, source: ResourceConstant): ReturnCode | ScreepsReturnCode| CreepActionReturnCode {
+Creep.prototype.TryWithdraw = function (target: AnyStoreStructure, source: ResourceConstant): ReturnCode | ScreepsReturnCode | CreepActionReturnCode {
     
     if (IsStoreEmpty(target, RESOURCE_ENERGY)) {
         return ReturnCode.ERR_TARGET_STORE_EMPTY
@@ -129,6 +207,10 @@ Creep.prototype.SetTargetID = function (id: Id<Structure>): void {
     this.memory.targetID = id;
 }
 
+Creep.prototype.SetRenewTargetID = function (id: Id<StructureSpawn>): void {
+    this.memory.renewTargetID = id;
+}
+
 Creep.prototype.GetSourceID = function (): Id<Source> | undefined {
     return this.memory.sourceID;
 }
@@ -136,6 +218,11 @@ Creep.prototype.GetSourceID = function (): Id<Source> | undefined {
 Creep.prototype.GetTargetID = function (): Id<Structure> | undefined {
     return this.memory.targetID;
 }
+
+Creep.prototype.GetRenewTargetID = function (): Id<StructureSpawn> | undefined {
+    return this.memory.renewTargetID;
+}
+
 
 ////////////////////////////////////////////////////////////////////
 
@@ -152,22 +239,29 @@ Creep.prototype.SwapPrimaryID = function (memVal: TargetIDMemory): void {
 //////////////////////////////////////////////////////////////////
 
 Creep.prototype.FindValidBuildTarget = function (args: Search): Id<ConstructionSite> | undefined {
-   
+    
     const distance: Distance = args.distance || Distance.Any;
     const find: FindConstant = args.find || FIND_CONSTRUCTION_SITES;
     const order = args.order || [STRUCTURE_EXTENSION, STRUCTURE_TOWER, STRUCTURE_STORAGE, STRUCTURE_CONTAINER, STRUCTURE_ROAD, STRUCTURE_WALL];
+    const filter = args.filter || {
+        filter: (site: ConstructionSite) => {
+            return order.includes(site.structureType)
+        }
+    };
     
+    console.log("FILTER: " + JSON.stringify(filter));
     
     let orderDict: SortOrder = order.reduce((previousValue: SortOrder, currentValue: StructureConstant, currentIndex: number, array: StructureConstant[]) => {
         previousValue[currentValue] = currentIndex + 1;
         return previousValue;
     }, {});
-
+    
     const targets: ConstructionSite[] = this.room.find(find, {
         filter: (site: ConstructionSite) => {
             return order.includes(site.structureType)
         }
     });
+    console.log("BUILD TARGETS: " + JSON.stringify(targets));
     
     if (targets && targets.length > 0) {
         targets.sort((a: ConstructionSite, b: ConstructionSite) => {
@@ -241,33 +335,47 @@ Creep.prototype.FindValidTransferID = function (args: Search): Id<AnyStoreStruct
                 structuresConsts?.includes(structure.structureType)
                 && !IsStoreFull(structure, RESOURCE_ENERGY)
         });
-        console.log("closest target " + targets);
+        console.log(this.name +" closest target " + targets);
         
         if (targets) return targets.id;
     }
     
     if (args.distance && args.distance === Distance.Any || !args.distance) {
         
-        targets = this.room.find(args.find || FIND_STRUCTURES, filter);
+        targets = this.room.find(args.find || FIND_STRUCTURES, {
+            filter: (structure: AnyStructure) => {
+                return structuresConsts?.includes(structure.structureType)
+            }
+        });
+        
+        
+        
         if (targets && targets.length > 0) {
             targets.sort((a: Structure, b: Structure) => {
                 const order: { [key: string]: number } = orderDict;
                 return order[a.structureType] - order[b.structureType];
             })
             
-            targets = targets.filter((target: AnyStoreStructure) => !IsStoreFull(target, RESOURCE_ENERGY))
             
-            console.log("Found free capacity @" + JSON.stringify(targets))
+            targets = targets.filter((target: AnyStoreStructure) => {
+                    return !IsStoreFull(target, RESOURCE_ENERGY)
+            })
+            
+            // console.log(this.name +" Found free capacity @" + JSON.stringify(targets))
+            console.log(this.name + " ************* Targets in findTargets ******" + targets);
             
             if (targets.length <= 0) return undefined;
             
             for (let i: number = 0; i < targets.length; i++) {
-                console.log("Target: " + targets[i].name + " " + " capacity: " + targets[i].store.getFreeCapacity(RESOURCE_ENERGY));
-                if (IsStoreFull(targets[i], RESOURCE_ENERGY)) {
-                    return targets[i].id;
+                // console.log("Target: " + targets[i] + " " + " capacity: " + targets[i].store.getFreeCapacity(RESOURCE_ENERGY));
+                let target = targets[i];
+                if (target.structureType === STRUCTURE_EXTENSION || target.structureType === STRUCTURE_SPAWN){
+                    if (target.energy < target.energyCapacity) {
+                        return target.id;
+                    } else continue;
                 }
+                return target.id;
             }
-            
         }
     }
     
@@ -343,11 +451,3 @@ Creep.prototype.GetWork = function (): WorkType {
     
     return WorkType.NoWork;
 }
-
-Creep.prototype.neededRenew = function (): boolean {
-    if (this.ticksToLive ?? 150 < 150) {
-        
-    }
-    return false;
-}
-
