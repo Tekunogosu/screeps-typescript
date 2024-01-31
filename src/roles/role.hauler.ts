@@ -29,8 +29,9 @@ export class RoleHauler extends Creep {
     
     private ResetTransferTarget = () => {
         let target = this.FindValidTransferID({
-            find: FIND_STRUCTURES, order: [STRUCTURE_SPAWN, STRUCTURE_TOWER, STRUCTURE_EXTENSION],
-            structure: [STRUCTURE_SPAWN, STRUCTURE_TOWER, STRUCTURE_EXTENSION],
+            find: FIND_STRUCTURES, order: [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER,],
+            structure: [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER, ],
+            distance: Distance.Closest
         });
         
         console.log(this.name + " *********** transferTarget: " + target)
@@ -59,9 +60,25 @@ export class RoleHauler extends Creep {
                 this.ResetSourceTarget();
             });
             
-            this.moveTo(Game.flags[this.memory.waitingFlagName!].pos);
+            if (!this.IsStoreEmpty(RESOURCE_ENERGY)) {
+                let storage = this.room.find(FIND_STRUCTURES, {filter: {structureType: STRUCTURE_STORAGE}})
+                if(storage && storage.length > 0) {
+                    let target = storage[0];
+                    if(this.transfer(target,RESOURCE_ENERGY) === ERR_NOT_IN_RANGE)
+                        this.moveTo(target)
+                }
+            } else {
+                this.moveTo(Game.flags[this.memory.waitingFlagName!].pos);
+            }
+            
             return;
         }
+        
+        // this.TryRenew();
+        //
+        // if (this.memory.renewing === true) {
+        //     return;
+        // }
         
         
         let actionTarget = undefined;

@@ -32,7 +32,7 @@ export class RoleBuilder extends Creep {
             // do repair on walls up to 5k, the
             let walls = this.room.find(FIND_STRUCTURES, {
                 filter: (struct: AnyStructure) => {
-                    return (struct.structureType === STRUCTURE_WALL && struct.hits <= 5000)
+                    return (struct.structureType === STRUCTURE_WALL && (struct.hits <= 35000))
                 }
             });
             if (walls && walls.length > 0) {

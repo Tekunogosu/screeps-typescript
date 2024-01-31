@@ -4,13 +4,24 @@ import "./globals";
 
 Creep.prototype._constructor = Creep.prototype.constructor;
 
-Creep.prototype.TryRenew = function (id: Id<StructureSpawn>): ReturnCode | ScreepsReturnCode {
-    const spawn = Game.getObjectById(id);
-    if (spawn) {
-        return spawn.renewCreep(this);
+Creep.prototype.TryRenew = function (): void {
+    if (this.ticksToLive! <= 200) {
+        this.memory.renewing = true;
     }
     
-    return ReturnCode.ERR_NO_SPAWN_FOUND;
+    if (this.memory.renewing) {
+        console.log(this.name + " is renewing")
+        let spawn = this.room.find(FIND_MY_SPAWNS);
+        if (spawn && spawn.length > 0) {
+            if (spawn[0].renewCreep(this) === ERR_NOT_IN_RANGE)
+                this.moveTo(spawn[0]);
+        }
+        
+        if (this.ticksToLive! >= 1400)
+            this.memory.renewing = false;
+    }
+    
+    return;
 }
 
 Creep.prototype.CheckRenew = function (primaryWork: WorkType): void  {
@@ -119,13 +130,13 @@ Creep.prototype.TryMove = function (_target: Id<any> | undefined, work: WorkType
             break;
         }
         case WorkType.Renew: {
-            workReturnCode = this.TryRenew(target)
+            // workReturnCode = this.TryRenew(target)
             break;
         }
     }
     
     if (workReturnCode === ERR_NOT_IN_RANGE) {
-        return this.moveTo(target,{reusePath: 25,visualizePathStyle: {lineStyle: "dotted", strokeWidth: 0.25, stroke: "#ff88ff"}});
+        return this.moveTo(target,{reusePath: 0,visualizePathStyle: {lineStyle: "dotted", strokeWidth: 0.25, stroke: "#ff88ff"}});
     } else {
         return workReturnCode;
     }

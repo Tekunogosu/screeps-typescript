@@ -1,4 +1,4 @@
-import {Distance, ReturnCode, RoleType, WorkType} from "./Utils";
+import {Distance, ReturnCode, RoleType, TaskType, WorkType} from "./Utils";
 
 declare global {
     
@@ -17,6 +17,7 @@ declare global {
         targetID?: Id<Creep>,
         repairID?: Id<AnyStructure>,
         healID?: Id<Creep>
+        isAttacking: boolean,
     }
     
     interface Source {
@@ -77,7 +78,7 @@ declare global {
         
         CheckRenew(primaryWork: WorkType): void,
         
-        TryRenew (target: Id<StructureSpawn>): ReturnCode | ScreepsReturnCode,
+        TryRenew (): void,
         
         TryMove (target: Id<any> | undefined, workType: WorkType): ReturnCode | CreepActionReturnCode | ScreepsReturnCode,
         
@@ -123,9 +124,9 @@ declare global {
         
         //////////////////////////////////
         
-        ResetHarvestTargetID (args: Search): void,
-        
-        ResetWithdrawTargetID (args: Search): void,
+        // ResetHarvestTargetID (args: Search): void,
+        //
+        // ResetWithdrawTargetID (args: Search): void,
         
         //////////////////////////////////
         
@@ -164,6 +165,7 @@ declare global {
         targetID?: Id<Structure>, // what do we perform our action on?
         renewTargetID?: Id<StructureSpawn>,
         currentWork?: WorkType,
+        waitingFlagID?: string,
         waitingFlagName?: string,
         renewing?: boolean,
         _move?: {
@@ -175,6 +177,12 @@ declare global {
             time?: number,
             path?: number,
         },
+        
+        handi?: {
+            pos: {x: number, y:number},
+            task?: TaskType,
+            targetID?: Id<Creep>,
+        }
         
         harvestTarget?: TargetIDMemory,
         transferTarget?: TargetIDMemory,

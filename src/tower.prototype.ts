@@ -40,10 +40,10 @@ StructureTower.prototype.FindNewHealTarget = function (): Id<Creep> | undefined 
     return undefined;
 }
 StructureTower.prototype.FindNewRepairTarget = function (): Id<AnyStructure> | undefined {
-    
-    const target: AnyStructure[] | undefined = this.room.find(FIND_MY_STRUCTURES, {
-        filter: (structure: AnyOwnedStructure) => {
-            return structure.hits < (structure.hitsMax / 1.25);
+ 
+    const target: AnyStructure[] | undefined = this.room.find(FIND_STRUCTURES, {
+        filter: (structure: Structure) => {
+            return ((structure.hits < (structure.hitsMax / 1.25)) && structure.structureType !== STRUCTURE_WALL);
         }
     })
     
@@ -61,7 +61,8 @@ export class Tower extends StructureTower {
         super(id);
     }
     
-    private DoRepair (): void {
+    public DoRepair (): void {
+        if (Memory.towers[this.id].isAttacking) return;
         let target = this.GetRepairTargetID();
         if(target) {
             let repair = Game.getObjectById(target);
@@ -76,7 +77,6 @@ export class Tower extends StructureTower {
             
             
         }
-        
         target = this.FindNewRepairTarget();
         if (!target){
             console.log("No target found: ...")
@@ -90,6 +90,7 @@ export class Tower extends StructureTower {
         if (target) {
             let attack = Game.getObjectById(target);
             if (attack) {
+                Memory.towers[this.id].isAttacking = true;
                 let attackCode = this.attack(attack);
                 console.log("Attack code: " + attackCode);
                 return;
@@ -97,11 +98,10 @@ export class Tower extends StructureTower {
         }
         target = this.FindNewTarget();
         if (!target) {
+            Memory.towers[this.id].isAttacking = false;
             console.log("No target found: ...")
             delete Memory.towers[this.id].targetID;
         }
-        
-        return;
     }
     
     private DoHeal (): void {
@@ -111,6 +111,7 @@ export class Tower extends StructureTower {
     private Init (): void {
         if (!Memory.towers[this.id]) {
             Memory.towers[this.id] = {} as TowerMemory;
+            Memory.towers[this.id].isAttacking = false;
         }
     }
     

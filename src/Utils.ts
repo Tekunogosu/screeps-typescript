@@ -33,7 +33,7 @@ export function IsEnergyEmpty (target: AnyStoreStructure): boolean {
 export function IsStoreFull (target: AnyStoreStructure, resource: ResourceConstant): boolean {
     return target.store.getFreeCapacity(resource)! <= 0;
 }
-export function IsStoreEmpty (target: AnyStoreStructure, resource: ResourceConstant): boolean | undefined {
+export function IsStoreEmpty (target: AnyStoreStructure|Tombstone, resource: ResourceConstant): boolean | undefined {
     if (!target || !target.store) return undefined;
     
     return target.store.getFreeCapacity(resource) === target.store.getCapacity(resource)
@@ -53,6 +53,7 @@ export enum RoleType {
     Hauler = "Hauler",
     Fixer = "Fixer",
     Upgrader = "Upgrader",
+    Handi = "Handi",
 }
 
 export enum Distance {
@@ -73,6 +74,12 @@ export enum WorkType {
     Upgrading,
     Renew,
 }
+
+export enum TaskType {
+    none = 'None',
+    collect = "Collect",
+    move = 'Move',
+} 
 
 export const WorkTable = ["NOTHING", "No Work", "Build", "Harvest", "Transfer", "Withdraw", "Attack", "Repair", "Upgrade"];
 

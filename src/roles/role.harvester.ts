@@ -62,10 +62,12 @@ export class RoleHarvester extends Creep {
             this.ResetTargetID();
         });
         
-        this.CallEvery(30, () => {
-            this.ResetHarvestID(); // make sure we are getting the best source 
-        });
-        
+        if (this.GetWork() !== WorkType.Harvesting){
+            this.CallEvery(30, () => {
+                this.ResetHarvestID(); // make sure we are getting the best source 
+            });
+        }
+       
         if (this.IsWorking(WorkType.NoWork)) {
             
             this.CallEvery(15, () => {
@@ -75,22 +77,26 @@ export class RoleHarvester extends Creep {
             
             this.moveTo(Game.flags[this.memory.waitingFlagName!].pos)
         }
-        
-        if(this.ticksToLive! <= 200) {
-            this.memory.renewing = true;
-        }
-        
-        if (this.memory.renewing) {
-            console.log(this.name +" is renewing")
-            let spawn =this.room.find(FIND_MY_SPAWNS);
-            if (spawn && spawn.length > 0){
-                if(spawn[0].renewCreep(this) === ERR_NOT_IN_RANGE)
-                    this.moveTo(spawn[0]);
-            }
-            
-            if (this.ticksToLive! >= 1400)
-                this.memory.renewing = false;
-        }
+      
+        // this.TryRenew();
+        // if(this.memory.renewing === true) {
+        //     return;
+        // }
+        // if(this.ticksToLive! <= 200) {
+        //     this.memory.renewing = true;
+        // }
+        //
+        // if (this.memory.renewing) {
+        //     console.log(this.name +" is renewing")
+        //     let spawn =this.room.find(FIND_MY_SPAWNS);
+        //     if (spawn && spawn.length > 0){
+        //         if(spawn[0].renewCreep(this) === ERR_NOT_IN_RANGE)
+        //             this.moveTo(spawn[0]);
+        //     }
+        //    
+        //     if (this.ticksToLive! >= 1400)
+        //         this.memory.renewing = false;
+        // }
         
         
         //this.CheckRenew(WorkType.Harvesting);
