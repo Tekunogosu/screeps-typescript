@@ -39,6 +39,12 @@ export function IsStoreEmpty (target: AnyStoreStructure|Tombstone, resource: Res
     return target.store.getFreeCapacity(resource) === target.store.getCapacity(resource)
 }
 
+export function  StoreHasResource(target: AnyStoreStructure, resource: ResourceConstant) : boolean | undefined {
+    if (!target || !target.store) return undefined;
+    
+    return target.store.getFreeCapacity(resource) === target.store.getCapacity(resource)
+}
+
 export function IsString (value: any): boolean {
     return typeof value === 'string';
 }
@@ -73,6 +79,8 @@ export enum WorkType {
     Repairing,
     Upgrading,
     Renew,
+    Sortie,
+    Pickup,
 }
 
 export enum TaskType {

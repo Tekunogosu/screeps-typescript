@@ -9,6 +9,7 @@ export class RoleHauler extends Creep {
     
   
     private ResetSourceTarget(): void {
+        
         let target = this.FindValidWithdrawID({
             distance: Distance.Closest, order: [STRUCTURE_STORAGE, STRUCTURE_CONTAINER], find: FIND_STRUCTURES,
             structure: [STRUCTURE_STORAGE, STRUCTURE_CONTAINER],
@@ -18,9 +19,17 @@ export class RoleHauler extends Creep {
         
         if (target) {
             this.SetSourceID(target);
-            console.log("hauler found: " + target);
             return
         }
+        
+        // // search for stuff on the ground
+        // let t = this.pos.findClosestByPath(FIND_DROPPED_RESOURCES);
+        // if (t) {
+        //     this.SetWork(WorkType.Pickup)
+        //     this.SetSourceID(t.id)
+        //     return;
+        // }
+        //
         
         // no withdraw target, go and wait
         // TODO: creeps need to have a backup, but haulers don't have any work parts, just move and carry maybe tough?

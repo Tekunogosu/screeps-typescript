@@ -20,6 +20,53 @@ declare global {
         isAttacking: boolean,
     }
     
+    interface CreepMemory {
+        role?: RoleType,
+        sourceID?: Id<Source>, // where does the creep get its source?
+        targetID?: Id<Structure>, // what do we perform our action on?
+        renewTargetID?: Id<StructureSpawn>,
+        currentWork?: WorkType,
+        waitingFlagID?: string,
+        waitingFlagName?: string,
+        renewing?: boolean,
+        astarweight?: number,
+        _move?: {
+            dest?: {
+                x?: number,
+                y?: number,
+                room?: string,
+            },
+            time?: number,
+            path?: number,
+        },
+        
+        handi?: {
+            pos: { x: number, y: number },
+            task?: TaskType,
+            targetID?: Id<Creep>,
+        }
+        
+        harvestTarget?: TargetIDMemory,
+        transferTarget?: TargetIDMemory,
+        upgradeTarget?: TargetIDMemory,
+        withdrawTarget?: TargetIDMemory,
+        repairTarget?: TargetIDMemory,
+    }
+    
+    interface SortieMemory extends CreepMemory {
+        sortieFlagName?: string
+        sortieRoom?: Room,
+        startSortie?: boolean,
+        
+    }
+    
+    interface TargetIDMemory {
+        primaryTargetID: Id<Source | Creep | Structure>,
+        // this list will hold source locations on the map
+        // the primary will be swapped to one of these if its unreachable or empty
+        secondaryTargetsID?: Id<Source | Creep | Structure>[],
+    }
+    
     interface Source {
         update (): void,
         
@@ -94,6 +141,7 @@ declare global {
         
         TryRepairing (target: AnyStructure): ReturnCode | ScreepsReturnCode | CreepActionReturnCode,
         
+        TryPickup(target: AnyStoreStructure): ReturnCode | ScreepsReturnCode | CreepActionReturnCode,
         /////////// Memory  /////////////
         
         SetSourceID (id: Id<any>): void,
@@ -159,44 +207,7 @@ declare global {
         _constructor: Function,
     }
     
-    interface CreepMemory {
-        role?: RoleType,
-        sourceID?: Id<Source>, // where does the creep get its source?
-        targetID?: Id<Structure>, // what do we perform our action on?
-        renewTargetID?: Id<StructureSpawn>,
-        currentWork?: WorkType,
-        waitingFlagID?: string,
-        waitingFlagName?: string,
-        renewing?: boolean,
-        _move?: {
-            dest?: {
-                x?: number,
-                y?: number,
-                room?: string,
-            },
-            time?: number,
-            path?: number,
-        },
-        
-        handi?: {
-            pos: {x: number, y:number},
-            task?: TaskType,
-            targetID?: Id<Creep>,
-        }
-        
-        harvestTarget?: TargetIDMemory,
-        transferTarget?: TargetIDMemory,
-        upgradeTarget?: TargetIDMemory,
-        withdrawTarget?: TargetIDMemory,
-        repairTarget?: TargetIDMemory,
-    }
     
-    interface TargetIDMemory {
-        primaryTargetID: Id<Source | Creep | Structure>,
-        // this list will hold source locations on the map
-        // the primary will be swapped to one of these if its unreachable or empty
-        secondaryTargetsID?: Id<Source | Creep | Structure>[],
-    }
     
     interface StructureSpawn {
         SpawnCreep (role: RoleType, name: string, body: (string)[], opts?: SpawnOptions): ReturnCode,

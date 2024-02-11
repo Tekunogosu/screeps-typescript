@@ -143,35 +143,44 @@ export const loop = ErrorMapper.wrapLoop(() => {
     
     //// Spawn Builders
     
+    const harvesters = 4;
+    const builders = 0;
+    const upgraders = 3;
+    const hauler = 2;
+    const handi = 0;
+    
     
     
     //// Spawn Upgraders
-    
 
-    if (CreepCount(RoleType.Harvester) < 4) {
+    if (CreepCount(RoleType.Harvester) < harvesters) {
         console.log(Spawner(RoleType.Harvester, 
-            [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE]
+            [
+                WORK,   WORK,   WORK,   WORK,   WORK,   WORK,   WORK, WORK, WORK,
+                CARRY,  CARRY,  CARRY,  CARRY,  CARRY,  CARRY, 
+                MOVE,   MOVE,   MOVE,   MOVE,   MOVE,   MOVE,   MOVE, MOVE, MOVE, MOVE
+            ]
             // [WORK, WORK, CARRY, CARRY, MOVE, MOVE]
         ));
     }
 
-    if (CreepCount(RoleType.Builder) < 1) {
+    if (CreepCount(RoleType.Builder) < builders) {
         console.log(Spawner(RoleType.Builder, [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE], 
-            CreepCount(RoleType.Harvester) >= 2 && CreepCount(RoleType.Upgrader) >= 2));
+            CreepCount(RoleType.Harvester) >= 2 && CreepCount(RoleType.Upgrader) >= 1));
     }
 
-    if (CreepCount(RoleType.Upgrader) < 2) {
-        console.log(Spawner(RoleType.Upgrader, [WORK, WORK, WORK, WORK,CARRY, CARRY, MOVE, MOVE]), CreepCount(RoleType.Harvester) >= 3);
+    if (CreepCount(RoleType.Upgrader) < upgraders) {
+        console.log(Spawner(RoleType.Upgrader, [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE]), CreepCount(RoleType.Harvester) >= 3);
     }
    
-    if (CreepCount(RoleType.Hauler) < 2) {
+    if (CreepCount(RoleType.Hauler) < hauler) {
         console.log(Spawner(RoleType.Hauler, 
             [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
             // [CARRY, CARRY, CARRY, MOVE, MOVE]
         ));
     }
     
-    if(CreepCount(RoleType.Handi) < 0) {
+    if(CreepCount(RoleType.Handi) < handi) {
         console.log(Spawner(RoleType.Handi, [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]), CreepCount(RoleType.Harvester) > 2);
     }
     

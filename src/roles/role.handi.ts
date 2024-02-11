@@ -1,7 +1,6 @@
 import "../globals"
 import "../Utils"
-import {IsStoreEmpty, TaskType, WorkType} from "../Utils";
-import _ from "lodash";
+import {Distance, TaskType, WorkType} from "../Utils";
 
 const enum FlagConfig {
     Collect = "collect:",
@@ -22,6 +21,24 @@ export class RoleHandi extends Creep {
         this.memory.handi!.task = task;
     }
     
+    private ResetTarget() : void {
+        // where to transfer
+        
+        let targets = this.FindValidTransferID({
+            find: FIND_STRUCTURES, distance: Distance.Any, structure: [STRUCTURE_STORAGE]
+        });
+        
+        if (targets && targets.length > 0) {
+            // let target: Id<Structure> = targets[0];
+            // this.SetTargetID()
+        }
+    }
+    
+    private ResetSource() : void {
+        // where to collect
+        
+    }
+    
     run (): void {
         
         if (!this.memory.currentWork)
@@ -39,40 +56,9 @@ export class RoleHandi extends Creep {
             }
         }
         
-        if (!this.memory.handi) {
-            this.memory.handi = {
-                pos: {x: 0, y: 0},
-                task: TaskType.none,
-            }
-        }
         
-        if (this.memory.handi) {
-            
-            this.room.find(FIND_TOMBSTONES, {
-                filter: (tomb) => {
-                    if (IsStoreEmpty(tomb, RESOURCE_ENERGY)) {
-                        
-                    }
-                    let code = this.withdraw(tomb, RESOURCE_ENERGY
-                        || RESOURCE_GHODIUM_OXIDE || RESOURCE_KEANIUM_OXIDE
-                        || RESOURCE_ZYNTHIUM_HYDRIDE || RESOURCE_UTRIUM_HYDRIDE);
-                    
-                    if (code === ERR_NOT_IN_RANGE)
-                        this.moveTo(tomb.pos)
-              
-                }
-            });
-            
-            
-            if (this.memory.handi.task === TaskType.move) {
-                if (this.memory.handi.pos) {
-                    let p = this.memory.handi.pos;
-                    let pos = new RoomPosition(p.x, p.y, this.room.name)
-                    this.moveTo(pos)
-                }
-                
-            }
-        }
+        
+       
         
     }
 }

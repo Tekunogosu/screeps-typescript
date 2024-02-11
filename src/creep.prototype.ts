@@ -1,5 +1,16 @@
-import {Distance, IsEnergyFull, IsStoreEmpty, IsStoreFull, ReturnCode, WorkTable, WorkType} from "./Utils";
+import {
+    Distance,
+    IsEnergyFull,
+    IsStoreEmpty,
+    IsStoreFull,
+    ReturnCode,
+    RoleType,
+    StoreHasResource,
+    WorkTable,
+    WorkType
+} from "./Utils";
 import "./globals";
+import {random} from "lodash";
 
 
 Creep.prototype._constructor = Creep.prototype.constructor;
@@ -136,7 +147,14 @@ Creep.prototype.TryMove = function (_target: Id<any> | undefined, work: WorkType
     }
     
     if (workReturnCode === ERR_NOT_IN_RANGE) {
-        return this.moveTo(target,{reusePath: 0,visualizePathStyle: {lineStyle: "dotted", strokeWidth: 0.25, stroke: "#ff88ff"}});
+        if (!this.memory.astarweight) this.memory.astarweight = random(0, 3, true);
+        
+        let ignoreCreeps = false;
+        if (this.GetWork() === WorkType.Transferring && this.memory.role !== RoleType.Hauler) {
+            ignoreCreeps = true;
+        }
+        
+        return this.moveTo(target,{heuristicWeight: this.memory.astarweight,ignoreCreeps: ignoreCreeps ,reusePath: 0,visualizePathStyle: {lineStyle: "dotted", strokeWidth: 0.25, stroke: "#000", opacity: 0.35}});
     } else {
         return workReturnCode;
     }
@@ -206,6 +224,14 @@ Creep.prototype.TryWithdraw = function (target: AnyStoreStructure, source: Resou
     
     return this.withdraw(target, source);
 }
+
+// Creep.prototype.TryPickup = function (target: AnyStoreStructure): ReturnCode | ScreepsReturnCode | CreepActionReturnCode {
+//     if (StoreHasResource(target, RESOURCE_ENERGY))
+//         return this.pickup(target, RESOURCE_ENERGY);
+//    
+//     return ERR_INVALID_TARGET;
+// }
+
 
 
 /////////// Memory  /////////////
